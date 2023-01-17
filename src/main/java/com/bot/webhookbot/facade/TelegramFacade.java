@@ -17,7 +17,6 @@ public class TelegramFacade {
 
         if (update.hasCallbackQuery()) {
             CallbackQuery callbackQuery = update.getCallbackQuery();
-
             return null;
         } else {
             Message message = update.getMessage();
@@ -25,11 +24,9 @@ public class TelegramFacade {
             sendMessage.setChatId(String.valueOf(message.getChatId()));
             if (message.hasText()) {
                 sendMessage.setText("Иди работай!");
-
                 return sendMessage;
             }
         }
-
         return null;
     }
 

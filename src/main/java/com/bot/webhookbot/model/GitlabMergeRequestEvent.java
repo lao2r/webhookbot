@@ -39,7 +39,6 @@ public class GitlabMergeRequestEvent {
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class LastCommit {
-
         private Author author;
     }
 

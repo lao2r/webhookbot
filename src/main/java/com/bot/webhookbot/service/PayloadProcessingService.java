@@ -26,16 +26,18 @@ public class PayloadProcessingService {
         String message;
 
         if (event.getObjectKind().equals("merge_request")) {
-            String mergeState = event.getObjectAttributes().getState();
+            if (event.getObjectAttributes().getState() != null) {
+                String mergeState = event.getObjectAttributes().getState();
+                String mergeStatus = event.getObjectAttributes().getMergeStatus();
 
-            if (mergeState.equals("merged")) {
                 String createdAt = event.getObjectAttributes().getCreatedAt().replaceAll("T", " ");
                 String url = event.getObjectAttributes().getUrl().replaceAll("-", "\\\\-");
                 message = "New merge request #" + event.getObjectAttributes().getIid() + " " +
                         event.getObjectAttributes().getTitle() +
                         " by " + event.getObjectAttributes().getLastCommit().getAuthor().getName() + "\n" +
                         "Created at: " + createdAt.substring(0, createdAt.length() - 2).replaceAll("U", "") + "\n" +
-                        "Merge state: " + mergeState;
+                        "Merge status: " + mergeStatus + "\n" +
+                        "Merge state: " + mergeState.toUpperCase();
                 message = message
                         .replaceAll("\\(", "\\\\(")
                         .replaceAll("\\)", "\\\\)")
