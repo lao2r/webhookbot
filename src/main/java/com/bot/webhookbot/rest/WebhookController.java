@@ -17,7 +17,6 @@ import java.io.IOException;
 public class WebhookController {
 
     private final TelegramBot telegramBot;
-
     private final PayloadProcessingService processingService;
 
     public WebhookController(TelegramBot telegramBot, PayloadProcessingService processingService) {

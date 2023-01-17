@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.methods.updates.SetWebhook;
 public class AppConfig {
 
     private final TelegramBotConfig botConfig;
+
     public AppConfig(TelegramBotConfig botConfig) {
         this.botConfig = botConfig;
     }
