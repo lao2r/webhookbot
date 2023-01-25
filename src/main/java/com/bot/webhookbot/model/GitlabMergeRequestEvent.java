@@ -14,6 +14,17 @@ public class GitlabMergeRequestEvent {
     @JsonProperty("object_attributes")
     private ObjectAttributes objectAttributes;
 
+    private Project project;
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Project {
+
+        private int id;
+
+        private String name;
+    }
+
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ObjectAttributes {

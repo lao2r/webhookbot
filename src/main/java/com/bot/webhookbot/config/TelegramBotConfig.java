@@ -22,4 +22,7 @@ public class TelegramBotConfig {
 
     @Value("${telegrambot.defaultChatId}")
     String defaultChatId;
+
+    @Value("${telegrambot.gitlabToken}")
+    String gitlabToken;
 }
