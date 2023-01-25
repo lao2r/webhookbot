@@ -90,12 +90,8 @@ public class PayloadProcessingService {
         try {
             Document document = saxBuilder.build(new StringReader(xmlString));
             Element root = document.getRootElement();
-            Element parent = root.getChild("parent", root.getNamespace());
-            if (parent != null) {
-                return parent.getChildText("version", root.getNamespace());
-            } else {
-                return root.getChildText("version", root.getNamespace());
-            }
+            return root.getChildText("version", root.getNamespace());
+
         } catch (JDOMException | IOException e) {
             e.printStackTrace();
         }
