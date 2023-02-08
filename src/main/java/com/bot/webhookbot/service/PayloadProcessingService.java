@@ -11,7 +11,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.Request.Builder;
 import okhttp3.Response;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
@@ -25,7 +24,6 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,9 +50,9 @@ public class PayloadProcessingService {
 
         if (event.getObjectKind().equals("merge_request")) {
             if (event.getObjectAttributes().getState() != null) {
+                String mergeState = event.getObjectAttributes().getState();
 
-                String mergeStatus = event.getObjectAttributes().getMergeStatus();
-                if (!mergeStatus.equalsIgnoreCase("MERGED")) {
+                if (mergeState.equalsIgnoreCase("MERGED")) {
                     String projectId = String.valueOf(event.getProject().getId());
                     try {
                         List<String> commits = objectMapper.readValue(getCommits(event.getProject().getId(),
@@ -87,7 +85,7 @@ public class PayloadProcessingService {
                         e.printStackTrace();
                     }
 
-                    String mergeState = event.getObjectAttributes().getState();
+                    String mergeStatus = event.getObjectAttributes().getMergeStatus();
                     String currentVersion = getFileContent((projectId), "pom.xml");
                     String updatedAt = event.getObjectAttributes().getUpdatedAt().replaceAll("T", " ");
                     String url = event.getObjectAttributes().getUrl().replaceAll("-", "\\\\-");
