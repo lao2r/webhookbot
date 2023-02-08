@@ -43,13 +43,24 @@ public class GitlabMergeRequestEvent {
 
         private int iid;
 
-        @JsonProperty("created_at")
-        private String createdAt;
+        @JsonProperty("updated_at")
+        private String updatedAt;
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class LastCommit {
+
+        private String id;
+
+        private String message;
+
+        private String title;
+
+        private String timestamp;
+
+        private String url;
+
         private Author author;
     }
 
