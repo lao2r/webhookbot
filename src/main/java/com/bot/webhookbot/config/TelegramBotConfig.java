@@ -23,6 +23,25 @@ public class TelegramBotConfig {
     @Value("${telegrambot.defaultChatId}")
     String defaultChatId;
 
+    @Value("${telegrambot.sharedChatId}")
+    String sharedChatId;
+
+    @Value("${telegrambot.commonChatId}")
+    String commonChatId;
+
     @Value("${telegrambot.gitlabToken}")
     String gitlabToken;
+
+    @Value("${telegrambot.projectId.shared}")
+    String projectIdShared;
+
+    @Value("${telegrambot.projectId.common}")
+    String projectIdCommon;
+
+    @Value("${telegrambot.mergeRequest.state}")
+    String mergeState;
+
+    @Value("${telegrambot.url.project}")
+    String projectUrl;
+
 }
