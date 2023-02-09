@@ -5,16 +5,10 @@ import com.bot.webhookbot.config.TelegramBotConfig;
 import com.bot.webhookbot.model.Commit;
 import com.bot.webhookbot.model.Diff;
 import com.bot.webhookbot.model.GitlabMergeRequestEvent;
-import com.bot.webhookbot.util.XMLUtils;
+import com.bot.webhookbot.util.GitlabUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import org.gitlab4j.api.GitLabApi;
-import org.gitlab4j.api.GitLabApiException;
-import org.gitlab4j.api.models.RepositoryFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
@@ -36,13 +30,10 @@ public class PayloadProcessingService {
     private TelegramBotConfig config;
 
     @Autowired
-    private OkHttpClient client;
-
-    @Autowired
-    private XMLUtils xmlUtils;
-
-    @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private GitlabUtils gitlabUtils;
 
     public void processPayload(String payload) throws JsonProcessingException, TelegramApiException {
         GitlabMergeRequestEvent event = objectMapper.readValue(payload, GitlabMergeRequestEvent.class);
@@ -55,7 +46,7 @@ public class PayloadProcessingService {
                 if (mergeState.equalsIgnoreCase("MERGED")) {
                     String projectId = String.valueOf(event.getProject().getId());
                     try {
-                        List<String> commits = objectMapper.readValue(getCommits(event.getProject().getId(),
+                        List<String> commits = objectMapper.readValue(gitlabUtils.getCommits(event.getProject().getId(),
                                 event.getObjectAttributes().getIid()), new TypeReference<List<Commit>>() {})
                                 .stream()
                                 .filter(commit -> !commit.getTitle().contains("ci skip"))
@@ -65,7 +56,7 @@ public class PayloadProcessingService {
                         Set<String> artifacts = new HashSet<>();
                         commits.forEach(commit -> {
                             try {
-                                Set<String> artifact = objectMapper.readValue(getCommitInfo(event.getProject().getId(),
+                                Set<String> artifact = objectMapper.readValue(gitlabUtils.getCommitInfo(event.getProject().getId(),
                                         commit), new TypeReference<List<Diff>>() {})
                                         .stream()
                                         .map(e -> e.getNewPath().replaceAll("\\/.*", ""))
@@ -79,14 +70,14 @@ public class PayloadProcessingService {
                         modules = String.join(",", artifacts
                                 .stream()
                                 .filter(path -> !path.equals("pom.xml"))
-                                .map(e -> e + "(" + getFileContent((projectId), String.format("%s/pom.xml", e)) + ")")
+                                .map(e -> e + "(" + gitlabUtils.getFileContent((projectId), String.format("%s/pom.xml", e)) + ")")
                                 .collect(Collectors.toSet()));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
 
                     String mergeStatus = event.getObjectAttributes().getMergeStatus();
-                    String currentVersion = getFileContent((projectId), "pom.xml");
+                    String currentVersion = gitlabUtils.getFileContent((projectId), "pom.xml");
                     String updatedAt = event.getObjectAttributes().getUpdatedAt().replaceAll("T", " ");
                     String url = event.getObjectAttributes().getUrl().replaceAll("-", "\\\\-");
                     String message = "\uD83D\uDCD6*__New merge request:__* #" + event.getObjectAttributes().getIid() + " " +
@@ -112,48 +103,6 @@ public class PayloadProcessingService {
                     sendMessage(message, projectId);
                 }
             }
-        }
-    }
-
-    public String getFileContent(String projectId, String filePath) {
-        GitLabApi gitLabApi = new GitLabApi("https://gitlab.akb-it.ru/", config.getGitlabToken());
-        RepositoryFile file;
-        try {
-            file = gitLabApi.getRepositoryFileApi().getFile(projectId, filePath, "develop");
-            return xmlUtils.processXml(file.getContent());
-        } catch (GitLabApiException e) {
-            e.printStackTrace();
-            return "Error retrieving file.";
-        }
-    }
-
-    public String getCommitInfo(int projectId, String commitHash) throws Exception {
-        Request request = new Request.Builder()
-                            .url("https://gitlab.akb-it.ru/api/v4/projects/" + projectId + "/repository/commits/" + commitHash + "/diff")
-                            .addHeader("Private-Token", config.getGitlabToken())
-                            .get()
-                            .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new Exception("Failed to get commits: " + response);
-            }
-            return response.peekBody(Long.MAX_VALUE).string();
-        }
-    }
-
-    public String getCommits(int projectId, int mergeRequestIid) throws Exception {
-        Request request = new Request.Builder()
-                .url("https://gitlab.akb-it.ru/api/v4/projects/" + projectId + "/merge_requests/" + mergeRequestIid + "/commits")
-                .addHeader("Private-Token", config.getGitlabToken())
-                .get()
-                .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new Exception("Failed to get commit information: " + response);
-            }
-            return response.peekBody(Long.MAX_VALUE).string();
         }
     }
 
