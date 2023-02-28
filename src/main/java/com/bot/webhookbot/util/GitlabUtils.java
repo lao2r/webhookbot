@@ -13,11 +13,13 @@ import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.RepositoryFile;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,6 +28,10 @@ public class GitlabUtils {
 
     @Autowired
     private TelegramBotConfig config;
+
+    @Autowired
+    @Qualifier("telegramBotProperties")
+    private Properties properties;
 
     @Autowired
     private OkHttpClient client;
@@ -37,7 +43,7 @@ public class GitlabUtils {
     private ObjectMapper objectMapper;
 
     public String getFileContent(String projectId, String filePath) {
-        GitLabApi gitLabApi = new GitLabApi(config.getProjectUrl(), config.getGitlabToken());
+        GitLabApi gitLabApi = new GitLabApi(properties.getProperty("project"), properties.getProperty("gitlabToken"));
         RepositoryFile file;
 
         try {
@@ -51,8 +57,8 @@ public class GitlabUtils {
 
     public String getCommitInfo(int projectId, String commitHash) throws Exception {
         Request request = new Request.Builder()
-                .url(config.getProjectUrl() + "api/v4/projects/" + projectId + "/repository/commits/" + commitHash + "/diff")
-                .addHeader("Private-Token", config.getGitlabToken())
+                .url(properties.getProperty("project") + "api/v4/projects/" + projectId + "/repository/commits/" + commitHash + "/diff")
+                .addHeader("Private-Token", properties.getProperty("gitlabToken"))
                 .get()
                 .build();
 
@@ -66,8 +72,8 @@ public class GitlabUtils {
 
     public String getCommits(int projectId, int mergeRequestIid) throws Exception {
         Request request = new Request.Builder()
-                .url(config.getProjectUrl() + "api/v4/projects/" + projectId + "/merge_requests/" + mergeRequestIid + "/commits")
-                .addHeader("Private-Token", config.getGitlabToken())
+                .url(properties.getProperty("project") + "api/v4/projects/" + projectId + "/merge_requests/" + mergeRequestIid + "/commits")
+                .addHeader("Private-Token", properties.getProperty("gitlabToken"))
                 .get()
                 .build();
 
@@ -79,12 +85,12 @@ public class GitlabUtils {
         }
     }
 
-    public Set<String> getAllArtifacts(GitlabMergeRequestEvent event) {
+    public Set<String> getAllArtifacts(GitlabMergeRequestEvent.ObjectAttributes attributes, String projectId) {
         Set<String> artifacts = new HashSet<>();
 
-        getAllCommits(event).forEach(commit -> {
+        getAllCommits(attributes, projectId).forEach(commit -> {
             try {
-                Set<String> artifact = objectMapper.readValue(getCommitInfo(event.getProject().getId(),
+                Set<String> artifact = objectMapper.readValue(getCommitInfo(Integer.parseInt(projectId),
                                 commit), new TypeReference<List<Diff>>() {})
                         .stream()
                         .filter(path -> !path.getNewPath().contains("pom.xml"))
@@ -98,9 +104,9 @@ public class GitlabUtils {
         return artifacts;
     }
 
-    public String getAllModules(GitlabMergeRequestEvent event, String projectId) {
+    public String getAllModules(GitlabMergeRequestEvent.ObjectAttributes attributes, String projectId) {
         try {
-            return String.join(",", getAllArtifacts(event)
+            return String.join(",", getAllArtifacts(attributes, projectId)
                     .stream()
                     .map(e -> e + "(" + getFileContent((projectId), String.format("%s/pom.xml", e)) + ")")
                     .collect(Collectors.toSet()));
@@ -110,10 +116,10 @@ public class GitlabUtils {
         }
     }
 
-    public List<String> getAllCommits(GitlabMergeRequestEvent event) {
+    public List<String> getAllCommits(GitlabMergeRequestEvent.ObjectAttributes attributes, String projectId) {
         try {
-            return objectMapper.readValue(getCommits(event.getProject().getId(),
-                            event.getObjectAttributes().getIid()), new TypeReference<List<Commit>>() {})
+            return objectMapper.readValue(getCommits(Integer.parseInt(projectId),
+                            attributes.getIid()), new TypeReference<List<Commit>>() {})
                     .stream()
                     .filter(commit -> !commit.getTitle().contains("ci skip"))
                     .map(Commit::getId)

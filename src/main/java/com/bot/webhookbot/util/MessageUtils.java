@@ -1,27 +1,75 @@
 package com.bot.webhookbot.util;
 
 import com.bot.webhookbot.model.GitlabMergeRequestEvent;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MessageUtils {
 
-    public String processMesage(GitlabMergeRequestEvent event, GitlabUtils gitlabUtils, String projectId, String mergeState) {
-        String modules = gitlabUtils.getAllModules(event, projectId);
-        String mergeStatus = event.getObjectAttributes().getMergeStatus();
-        String currentVersion = gitlabUtils.getFileContent((projectId), "pom.xml");
-        String updatedAt = event.getObjectAttributes().getUpdatedAt().replaceAll("T", " ");
-        String url = event.getObjectAttributes().getUrl().replaceAll("-", "\\\\-");
+    @Autowired
+    private GitlabUtils gitlabUtils;
 
-        String message = "\uD83D\uDCD6*__New merge request:__* #" + event.getObjectAttributes().getIid() + " " +
-                event.getObjectAttributes().getTitle().replaceAll("_", "\\\\_") +
-                " *__by__ *" + event.getObjectAttributes().getLastCommit().getAuthor().getName() + "\n" +
-                "⏰*__Updated at:__* " + updatedAt.substring(0, updatedAt.length() - 2).replaceAll("U", "") + "\n" +
-                "⚙️*__Merge status:__* " + mergeStatus.replaceAll("_", "\\\\_") + "\n" +
-                "✅*__Merge state:__* " + mergeState.toUpperCase() + "\n" +
-                "\uD83C\uDFF7*__General version:__* " + currentVersion + "\n" +
-                "\uD83D\uDDA5*__Modules:__* " + "```"+ modules + "```";
-        message = message
+    public String processMessage(GitlabMergeRequestEvent.ObjectAttributes attributes, String projectId, String mergeState) {
+        String message =
+                formatMergeRequest(attributes) +
+                formatTitle(attributes) +
+                formatAuthor(attributes) +
+                formatUpdatedAt(attributes) +
+                formatMergeStatus(attributes) +
+                formatMergeState(mergeState) +
+                formatGeneralVersion((projectId), "pom.xml") +
+                formatModules(attributes, projectId) +
+                formatDescription(attributes);
+        return formatMessage(message) + formatUrl(attributes);
+    }
+
+    private String formatMergeRequest(GitlabMergeRequestEvent.ObjectAttributes attributes) {
+        return "\uD83D\uDCD6*__New merge request:__* #" + attributes.getIid() + " ";
+    }
+
+    private String formatAuthor(GitlabMergeRequestEvent.ObjectAttributes attributes) {
+        return " *__by__ *" + attributes.getLastCommit().getAuthor().getName() + "\n";
+    }
+
+    private String formatMergeState(String mergeState) {
+        return "✅*__Merge state:__* " + mergeState.toUpperCase() + "\n";
+    }
+
+    private String formatGeneralVersion(String projectId, String filePath) {
+        return "\uD83C\uDFF7*__General version:__* " + gitlabUtils.getFileContent((projectId), filePath) + "\n";
+    }
+
+    private String formatModules(GitlabMergeRequestEvent.ObjectAttributes attributes, String projectId) {
+        return "\uD83D\uDDA5*__Modules:__* " + "```"+ gitlabUtils.getAllModules(attributes, projectId) + "```" + "\n";
+    }
+
+    private String formatUpdatedAt(GitlabMergeRequestEvent.ObjectAttributes attributes) {
+        return "⏰*__Updated at:__* " + attributes.getUpdatedAt().replaceAll("T", " ")
+                .substring(0, attributes.getUpdatedAt().length() - 2)
+                .replaceAll("U", "") + "\n";
+    }
+
+    private String formatMergeStatus(GitlabMergeRequestEvent.ObjectAttributes attributes) {
+        return "⚙️*__Merge status:__* " + attributes.getMergeStatus().replaceAll("_", "\\\\_") + "\n";
+    }
+
+    private String formatTitle(GitlabMergeRequestEvent.ObjectAttributes attributes) {
+        return attributes.getTitle().replaceAll("_", "\\\\_");
+    }
+
+    private String formatDescription(GitlabMergeRequestEvent.ObjectAttributes attributes) {
+        return "⚠️*__Description:__* " + ((attributes.getDescription() == null ||
+                                             attributes.getDescription().isEmpty()) ? "No description" :
+                                             attributes.getDescription().replaceAll("_", "\\\\_") + "\n");
+    }
+
+    private String formatUrl(GitlabMergeRequestEvent.ObjectAttributes attributes) {
+        return "\n" + "\uD83D\uDD17[Ссылка на MERGE REQUEST](" + attributes.getUrl().replaceAll("-", "\\\\-") + ")";
+    }
+
+    private String formatMessage(String message) {
+        return message
                 .replaceAll("\\(", "\\\\(")
                 .replaceAll("\\)", "\\\\)")
                 .replaceAll("\\[", "\\\\[")
@@ -30,9 +78,5 @@ public class MessageUtils {
                 .replaceAll("!", "\\\\!")
                 .replaceAll("#", "\\\\#")
                 .replaceAll("-", "\\\\-");
-        message = message + "\n" +
-                "\uD83D\uDD17[Ссылка на MERGE REQUEST](" + url + ")";
-
-        return message;
     }
 }

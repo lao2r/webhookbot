@@ -31,6 +31,8 @@ public class GitlabMergeRequestEvent {
 
         private String title;
 
+        private String description;
+
         @JsonProperty("merge_status")
         private String mergeStatus;
 
@@ -45,6 +47,10 @@ public class GitlabMergeRequestEvent {
 
         @JsonProperty("updated_at")
         private String updatedAt;
+
+        public String getUpdatedAt() {
+            return updatedAt;
+        }
     }
 
     @Data
