@@ -28,10 +28,6 @@ public class PayloadProcessingService {
     private TelegramBotConfig config;
 
     @Autowired
-    @Qualifier("telegramBotProperties")
-    private Properties properties;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
@@ -43,7 +39,7 @@ public class PayloadProcessingService {
         if (event.getObjectKind().equals("merge_request")) {
             if (event.getObjectAttributes().getState() != null) {
                 String mergeState = event.getObjectAttributes().getState();
-                if (mergeState.equalsIgnoreCase(config.getProperties().getProperty("state"))) {
+                if (mergeState.equalsIgnoreCase(config.getMergeState())) {
                     String projectId = String.valueOf(event.getProject().getId());
                     sendMessage(messageUtils.processMessage(event.getObjectAttributes(), projectId, mergeState), projectId);
                 }
@@ -55,12 +51,12 @@ public class PayloadProcessingService {
         SendMessage sendMessage = new SendMessage();
         String chatId;
 
-        if (projectId.equals(properties.getProperty("sharedChatId"))) {
-            chatId = properties.getProperty("sharedChatId");
-        } else if (projectId.equals(properties.getProperty("commonChatId"))) {
-            chatId = properties.getProperty("commonChatId");
+        if (projectId.equals(config.getProjectIdShared())) {
+            chatId = config.getSharedChatId();
+        } else if (projectId.equals(config.getProjectIdCommon())) {
+            chatId = config.getCommonChatId();
         } else {
-            chatId = properties.getProperty("defaultChatId");
+            chatId = config.getDefaultChatId();
         }
 
         sendMessage.setText(processedMessage);

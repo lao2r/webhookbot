@@ -30,10 +30,6 @@ public class GitlabUtils {
     private TelegramBotConfig config;
 
     @Autowired
-    @Qualifier("telegramBotProperties")
-    private Properties properties;
-
-    @Autowired
     private OkHttpClient client;
 
     @Autowired
@@ -43,7 +39,7 @@ public class GitlabUtils {
     private ObjectMapper objectMapper;
 
     public String getFileContent(String projectId, String filePath) {
-        GitLabApi gitLabApi = new GitLabApi(properties.getProperty("project"), properties.getProperty("gitlabToken"));
+        GitLabApi gitLabApi = new GitLabApi(config.getProjectUrl(), config.getGitlabToken());
         RepositoryFile file;
 
         try {
@@ -57,8 +53,8 @@ public class GitlabUtils {
 
     public String getCommitInfo(int projectId, String commitHash) throws Exception {
         Request request = new Request.Builder()
-                .url(properties.getProperty("project") + "api/v4/projects/" + projectId + "/repository/commits/" + commitHash + "/diff")
-                .addHeader("Private-Token", properties.getProperty("gitlabToken"))
+                .url(config.getProjectUrl() + "api/v4/projects/" + projectId + "/repository/commits/" + commitHash + "/diff")
+                .addHeader("Private-Token", config.getGitlabToken())
                 .get()
                 .build();
 
@@ -72,8 +68,8 @@ public class GitlabUtils {
 
     public String getCommits(int projectId, int mergeRequestIid) throws Exception {
         Request request = new Request.Builder()
-                .url(properties.getProperty("project") + "api/v4/projects/" + projectId + "/merge_requests/" + mergeRequestIid + "/commits")
-                .addHeader("Private-Token", properties.getProperty("gitlabToken"))
+                .url(config.getProjectUrl() + "api/v4/projects/" + projectId + "/merge_requests/" + mergeRequestIid + "/commits")
+                .addHeader("Private-Token", config.getGitlabToken())
                 .get()
                 .build();
 
