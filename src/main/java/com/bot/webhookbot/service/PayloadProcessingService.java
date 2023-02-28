@@ -3,19 +3,14 @@ package com.bot.webhookbot.service;
 import com.bot.webhookbot.bot.TelegramBot;
 import com.bot.webhookbot.config.TelegramBotConfig;
 import com.bot.webhookbot.model.GitlabMergeRequestEvent;
-import com.bot.webhookbot.util.GitlabUtils;
 import com.bot.webhookbot.util.MessageUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import java.util.Properties;
 
 
 @Service
